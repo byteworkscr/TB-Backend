@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       RoleUser[]
+  permissions RolePermission[]
+}
+
+model User {
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  roles           RoleUser[]
+  loans           Loan[]
+  payments        Payment[]
+  reputation      Reputation?
+  recommendations Recommendation[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+}
+
+model RoleUser {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}
+
+model Permission {
+  id        String           @id @default(uuid())
+  name      String           @unique
+  createdAt DateTime         @default(now())
+  roles     RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model Loan {
+  id          String    @id @default(uuid())
+  userId      String
+  amount      Decimal
+  status      String
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id])
+  payments    Payment[]
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  userId      String
+  loanId      String
+  amount      Decimal
+  paymentDate DateTime @default(now())
+  status      String
+  user        User     @relation(fields: [userId], references: [id])
+  loan        Loan     @relation(fields: [loanId], references: [id])
+}
+
+model Reputation {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  reputationScore Int
+  trend           String
+  lastUpdated     DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model Recommendation {
+  id                 String @id @default(uuid())
+  userId             String
+  recommendationText String
+  user               User   @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  timestamp DateTime @default(now())
+  details   String?
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+enum NotificationType {
+  LOAN_UPDATE
+  ESCROW_UPDATE
+  PAYMENT_RECEIVED
+  SYSTEM_ALERT
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+}
