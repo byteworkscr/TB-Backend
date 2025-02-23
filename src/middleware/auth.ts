@@ -20,8 +20,8 @@ export const verifyWalletAuth = (req: Request, res: Response, next: NextFunction
         res.status(401).json({ error: 'Invalid signature' });
         return;
       }
-      // Añadir usuario a la request y continuar
-      req.user = { walletAddress };
+      // Implement here issue where we create the user in the database and
+      // we associate the roles with it.
       next();
     })
     .catch(error => {

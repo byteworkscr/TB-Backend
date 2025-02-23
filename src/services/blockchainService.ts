@@ -1,5 +1,6 @@
-import StellarSdk from 'stellar-sdk';
+import { Networks } from '@stellar/stellar-sdk';
 import dotenv from 'dotenv';
+import { Horizon } from 'stellar-sdk';
 
 dotenv.config();
 
@@ -9,8 +10,8 @@ class BlockchainService {
 
   constructor() {
     // Usa testnet para desarrollo
-    this.server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
-    this.networkPassphrase = StellarSdk.Networks.TESTNET;
+    this.server = new Horizon.Server('https://horizon-testnet.stellar.org');
+    this.networkPassphrase = Networks.TESTNET;
   }
 
   // Método para verificar conexión
