@@ -1,31 +1,44 @@
 import { Request, Response, NextFunction } from 'express';
-import blockchainService from '../services/blockchainService';
+import passport from 'passport';
 
-// Middleware de autenticación sincrono que maneja la promesa internamente
-export const verifyWalletAuth = (req: Request, res: Response, next: NextFunction): void => {
-  const walletAddress = req.headers.walletaddress as string;
-  const signature = req.headers.signature as string;
-  
-  if (!walletAddress || !signature) {
-    res.status(401).json({ error: 'Authentication required' });
-    return;
+interface AuthInfo {
+  message?: string;
+  status?: number;
+}
+
+interface AuthUser {
+  walletAddress: string;
+}
+
+export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.isAuthenticated()) {
+    return next();
   }
+  res.status(401).json({ error: 'Unauthorized - Please login first' });
+};
 
-  const message = 'authenticate_trustbridge';
-  
-  // Manejamos la promesa internamente
-  blockchainService.verifyWalletSignature(walletAddress, signature, message)
-    .then(isValid => {
-      if (!isValid) {
-        res.status(401).json({ error: 'Invalid signature' });
-        return;
+export const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate('wallet', (err: Error | null, user: AuthUser | false, info: AuthInfo) => {
+    if (err) {
+      return next(err);
+    }
+    if (!user) {
+      const status = info?.status || (info?.message?.includes('not found') ? 400 : 401);
+      return res.status(status).json({ error: info?.message || 'Authentication failed' });
+    }
+    req.logIn(user, (err) => {
+      if (err) {
+        return next(err);
       }
-      // Añadir usuario a la request y continuar
-      req.user = { walletAddress };
       next();
-    })
-    .catch(error => {
-      console.error('Authentication error:', error);
-      res.status(500).json({ error: 'Authentication failed' });
     });
+  })(req, res, next);
+};
+
+// Custom error handler for authentication
+export const handleAuthError = (err: any, req: Request, res: Response, next: NextFunction) => {
+  if (err.name === 'AuthenticationError') {
+    return res.status(401).json({ error: err.message });
+  }
+  next(err);
 };

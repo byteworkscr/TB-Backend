@@ -1,11 +1,11 @@
-import express from 'express';
-import { verifyWalletAuth } from '../middleware/auth';
+import express, { Request, Response } from 'express';
+import { isAuthenticated } from '../middleware/auth';
 import blockchainService from '../services/blockchainService';
 
 const router = express.Router();
 
-// Ruta pública - Obtener préstamos disponibles
-router.get('/available', (req, res) => {
+// Public route - Get available loans
+router.get('/available', (req: Request, res: Response) => {
   blockchainService.getAvailableLoans()
     .then(loans => {
       res.json({ success: true, data: loans });
@@ -16,10 +16,10 @@ router.get('/available', (req, res) => {
     });
 });
 
-// Ruta protegida - Detalles de préstamo específico
-router.get('/:id', verifyWalletAuth, (req, res) => {
+// Protected route - Specific loan details
+router.get('/:id', isAuthenticated, (req: Request, res: Response) => {
   const loanId = req.params.id;
-  // En una implementación real, buscarías este préstamo en la blockchain
+  // In a real implementation, you would fetch this loan from the blockchain
   res.json({ 
     success: true, 
     data: { 
@@ -27,7 +27,7 @@ router.get('/:id', verifyWalletAuth, (req, res) => {
       amount: '500', 
       interest: '4%', 
       duration: '45 days',
-      borrower: '0x1234...5678',
+      borrower: req.user?.walletAddress || 'unknown',
       status: 'active'
     } 
   });
