@@ -96,6 +96,22 @@ export class EmailNotificationService {
           </html>
         `,
       },
+
+      EMAIL_VERIFICATION: {
+        subject: 'Verify Your Email Address',
+        template: (userName, message) => `
+          <html>
+            <body>
+              <h1>Email Verification</h1>
+              <p>Hello ${userName},</p>
+              <p>Please verify your email address by clicking the link below:</p>
+              <p>${message}</p>
+              <p>If you did not request this change, please ignore this email.</p>
+              <p>Thank you,<br>TrustBridge</p>
+            </body>
+          </html>
+        `,
+      },
     };
   }
 
