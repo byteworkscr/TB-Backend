@@ -32,6 +32,7 @@ model User {
   payments   Payment[]
   reputation Reputation?
   recommendations Recommendation[]
+  creditScore     CreditScore?
   auditLogs   AuditLog[]  
   notifications Notification[] 
   resetToken  String?
@@ -144,4 +145,12 @@ model RefreshToken {
   deviceId        String?
   userAgent       String?
   ipAddress       String?
+}
+
+model CreditScore {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  score       Int
+  lastUpdated DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
 }
