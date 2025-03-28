@@ -1,0 +1,70 @@
+scalar DateTime
+
+type Role {
+    id: ID!
+    name: String!
+}
+
+type RoleUser {
+    role: Role!
+}
+
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    walletAddress: String!
+    roles: [RoleUser!]!
+    lastLogin: DateTime
+    createdAt: DateTime!
+    loans: [Loan!]!
+    reputation: Reputation
+}
+
+type Loan {
+    id: ID!
+    amount: Float!
+    status: String!
+    createdAt: DateTime!
+    completedAt: DateTime
+}
+
+type Reputation {
+    id: ID!
+    reputationScore: Int!
+    trend: String!
+    lastUpdated: DateTime!
+}
+
+input CreateUserInput {
+    name: String!
+    email: String!
+    password: String!
+    walletAddress: String!
+    roleIds: [String!]!
+}
+
+input UpdateUserInput {
+    name: String
+    email: String
+    walletAddress: String
+}
+
+type AuthPayload {
+    user: User!
+    token: String!
+    refreshToken: String!
+}
+
+type Query {
+    getUser(id: ID!): User
+    getCurrentUser: User
+    getAllUsers: [User!]!
+}
+
+type Mutation {
+    registerUser(input: CreateUserInput!): AuthPayload!
+    loginUser(email: String!, password: String!): AuthPayload!
+    updateUser(id: ID!, input: UpdateUserInput!): User!
+    deleteUser(id: ID!): Boolean!
+}

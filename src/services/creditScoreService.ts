@@ -2,6 +2,7 @@ import { Loan, Payment } from "@prisma/client";
 import prisma from "../config/prisma";
 import CreditScoreRepository from "../repositories/CreditScoreRepository";
 
+
 class CreditScoreService {
   private creditScoreRepository = CreditScoreRepository;
 

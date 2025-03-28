@@ -67,6 +67,7 @@ export const createRefreshToken = async (
     data: {
       token,
       userId: user.walletAddress,
+      type: "REFRESH", 
       expiresAt,
       isRevoked: false,
       family: tokenFamily,

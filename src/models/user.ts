@@ -5,6 +5,31 @@ export interface User {
   lastLogin?: Date;
 }
 
+
+export interface Context {
+  user?: {
+    id: string;
+    email: string;
+  }
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  password: string;
+  walletAddress: string;
+  roleIds: string[];
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  email?: string;
+  walletAddress?: string;
+}
+
+
+
+
 export interface UserSession {
   walletAddress: string;
 }

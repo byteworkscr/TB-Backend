@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "nonce" DROP NOT NULL,
+ALTER COLUMN "walletAddress" DROP NOT NULL;

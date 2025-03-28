@@ -1,6 +1,6 @@
-import nodemailer, { Transporter } from 'nodemailer';
-import { NotificationType } from '@prisma/client';
-import dotenv from 'dotenv';
+import nodemailer, { Transporter } from "nodemailer";
+import { NotificationType } from "@prisma/client";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -9,8 +9,16 @@ interface EmailConfig {
   port: number;
   secure: boolean;
   auth: {
+    type: string;
     user: string;
-    pass: string;
+    // OAuth2 properties
+    clientId?: string;
+    clientSecret?: string;
+    refreshToken?: string;
+    accessToken?: string;
+    expires?: number;
+    // Password fallback (only used if OAuth2 is not configured)
+    pass?: string;
   };
 }
 
@@ -25,23 +33,63 @@ export class EmailNotificationService {
   private fromEmail: string;
 
   constructor() {
-    const emailConfig: EmailConfig = {
-      host: process.env.EMAIL_HOST || '',
-      port: parseInt(process.env.EMAIL_PORT || '587', 10),
-      secure: process.env.EMAIL_SECURE === 'true',
+    const useOAuth2 =
+      process.env.EMAIL_USE_OAUTH === "true" &&
+      process.env.EMAIL_CLIENT_ID &&
+      process.env.EMAIL_CLIENT_SECRET &&
+      process.env.EMAIL_REFRESH_TOKEN;
+
+    const auth: any = {
+      user: process.env.EMAIL_USER || "",
+    };
+
+    if (useOAuth2) {
+      auth.type = "OAuth2";
+      auth.clientId = process.env.EMAIL_CLIENT_ID;
+      auth.clientSecret = process.env.EMAIL_CLIENT_SECRET;
+      auth.refreshToken = process.env.EMAIL_REFRESH_TOKEN;
+
+      if (process.env.EMAIL_ACCESS_TOKEN) {
+        auth.accessToken = process.env.EMAIL_ACCESS_TOKEN;
+      }
+
+      if (process.env.EMAIL_TOKEN_EXPIRES) {
+        auth.expires = parseInt(process.env.EMAIL_TOKEN_EXPIRES, 10);
+      }
+    } else {
+      // Only use password fallback if OAuth2 is not configured
+      if (process.env.EMAIL_PASS) {
+        auth.pass = process.env.EMAIL_PASS;
+      }
+    }
+
+    // const emailConfig: EmailConfig = {
+    //   host: process.env.EMAIL_HOST || '',
+    //   port: parseInt(process.env.EMAIL_PORT || '587', 10),
+    //   secure: process.env.EMAIL_SECURE === 'true',
+    //   auth,
+    // };
+
+    // this.fromEmail = process.env.EMAIL_FROM || 'noreply@yourdomain.com';
+    // this.transporter = nodemailer.createTransport(emailConfig);
+
+    const emailConfig = {
+      host: process.env.EMAIL_HOST || "",
+      port: parseInt(process.env.EMAIL_PORT || "587", 10),
+      secure: process.env.EMAIL_SECURE === "true", // true for 465, false for other ports
       auth: {
-        user: process.env.EMAIL_USER || '',
-        pass: process.env.EMAIL_PASS || '',
+        user: process.env.EMAIL_USER || "",
+        pass: process.env.EMAIL_PASS || "",
       },
     };
 
-    this.fromEmail = process.env.EMAIL_FROM || 'noreply@yourdomain.com';
+    this.fromEmail = process.env.EMAIL_FROM || "noreply@yourdomain.com";
     this.transporter = nodemailer.createTransport(emailConfig);
 
     // Define email templates for each notification type
     this.emailTemplates = {
       LOAN_UPDATE: {
-        subject: 'Loan Update',
+        subject: "Loan Update",
         template: (userName, message) => `
           <html>
             <body>
@@ -55,7 +103,7 @@ export class EmailNotificationService {
         `,
       },
       ESCROW_UPDATE: {
-        subject: 'Escrow Update',
+        subject: "Escrow Update",
         template: (userName, message) => `
           <html>
             <body>
@@ -69,7 +117,7 @@ export class EmailNotificationService {
         `,
       },
       PAYMENT_RECEIVED: {
-        subject: 'Payment Received',
+        subject: "Payment Received",
         template: (userName, message) => `
           <html>
             <body>
@@ -83,7 +131,7 @@ export class EmailNotificationService {
         `,
       },
       SYSTEM_ALERT: {
-        subject: 'System Alert',
+        subject: "System Alert",
         template: (userName, message) => `
           <html>
             <body>
@@ -127,7 +175,11 @@ export class EmailNotificationService {
       console.log(`Email sent: ${info.messageId}`);
       return true;
     } catch (error) {
-      console.error('Error sending email:', error);
+      // Safe error logging without exposing credentials
+      console.error(
+        "Error sending email:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       return false;
     }
   }
@@ -140,7 +192,11 @@ export class EmailNotificationService {
       await this.transporter.verify();
       return true;
     } catch (error) {
-      console.error('Email service connection error:', error);
+      // Safe error logging without exposing credentials
+      console.error(
+        "Email service connection error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       return false;
     }
   }

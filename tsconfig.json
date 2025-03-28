@@ -8,6 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "strictPropertyInitialization": false, 
     "typeRoots": ["./node_modules/@types", "./@types"], 
     "baseUrl": "./",
     "paths": {

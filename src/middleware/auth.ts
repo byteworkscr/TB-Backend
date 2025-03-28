@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
@@ -6,6 +5,8 @@ import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import prisma from '../config/prisma';
 import { verifyAccessToken, REFRESH_TOKEN_COOKIE_NAME } from "../utils/jwt";
+import { isTokenRevoked } from '../services/tokenService';
+import { findRefreshToken } from '../models/refreshToken';
 
 interface AuthInfo {
   message?: string;
@@ -16,11 +17,11 @@ interface AuthUser {
   walletAddress: string;
 }
 
-export const isAuthenticated = (
+export const isAuthenticated = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -37,11 +38,39 @@ export const isAuthenticated = (
     }
 
     const payload = verifyAccessToken(token);
+    
+    // Check if the token is revoked
+    const isRevoked = await isTokenRevoked(token);
+    if (isRevoked) {
+      res.status(401).json({ error: "Token has been revoked" });
+      return;
+    }
+
+    // Check if there's a valid refresh token
+    const refreshToken = getRefreshTokenFromCookie(req);
+    if (!refreshToken) {
+      res.status(401).json({ error: "No refresh token found" });
+      return;
+    }
+
+    // Verify the refresh token is valid and not revoked
+    const storedRefreshToken = await findRefreshToken(refreshToken);
+    if (!storedRefreshToken) {
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      res.status(401).json({ error: "Invalid or expired refresh token" });
+      return;
+    }
+
+    // Set the user in the request
     req.user = { walletAddress: payload.walletAddress };
     next();
   } catch (error) {
-    res.status(401).json({ error: "Invalid or expired token" });
-    return;
+    if (error instanceof Error && error.name === "JsonWebTokenError") {
+      res.status(401).json({ error: "Invalid or expired token" });
+      return;
+    }
+    console.error("Authentication error:", error);
+    res.status(500).json({ error: "Internal server error during authentication" });
   }
 };
 
@@ -158,7 +187,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Store the token in the DB (optional but good for reference)
     await prisma.user.update({
       where: { email },
-      data: { resetToken: token },
+      data: { 
+        resetToken: token 
+
+      },
     });
 
     // Configure email transporter
