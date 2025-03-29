@@ -1,10 +1,11 @@
 import prisma from "../config/prisma";
-import { User } from "./user";
+
 import {
   countActiveRefreshTokens,
   enforceTokenLimit,
   MAX_ACTIVE_TOKENS_PER_USER,
 } from "./tokenLimit";
+import { IDeviceInfo,IRefreshToken,IAuthUser } from "../interfaces";
 
 export {
   countActiveRefreshTokens,
@@ -12,27 +13,7 @@ export {
   MAX_ACTIVE_TOKENS_PER_USER,
 };
 
-export interface DeviceInfo {
-  device: string | null; // Device type (mobile, desktop, etc.)
-  deviceId: string | null; // Unique identifier for the device
-  userAgent: string | null; // Browser/app user agent
-  ipAddress: string | null; // IP address of the request
-}
 
-export interface RefreshToken {
-  id: string;
-  token: string;
-  userId: string;
-  expiresAt: Date;
-  createdAt: Date;
-  isRevoked: boolean;
-  family: string | null; // Token family identifier for tracking lineage
-  replacedByToken: string | null; // The token that replaced this one
-  device: string | null; // Device information
-  deviceId: string | null; // Unique identifier for the device
-  userAgent: string | null; // User agent string
-  ipAddress: string | null; // IP address
-}
 
 // Generate a new family ID for fresh login sessions
 export const generateTokenFamily = (): string => {
@@ -43,52 +24,32 @@ export const generateTokenFamily = (): string => {
 };
 
 export const createRefreshToken = async (
-  user: User,
+  user: IAuthUser,
   token: string,
-  deviceInfo?: DeviceInfo,
+  deviceInfo?: IDeviceInfo,
   family?: string,
   previousToken?: string
-): Promise<RefreshToken> => {
+): Promise<IRefreshToken> => {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
 
-  // Generate a new family ID if none provided (for new login sessions)
-  const tokenFamily = family || generateTokenFamily();
-
-  // If we have a previous token, mark it as replaced
-  if (previousToken) {
-    await prisma.refreshToken.update({
-      where: { token: previousToken },
-      data: { replacedByToken: token },
-    });
-  }
-
-  // Create the new token
-  const refreshToken = await prisma.refreshToken.create({
+  return await prisma.refreshToken.create({
     data: {
-      token,
       userId: user.walletAddress,
       type: "REFRESH", 
       expiresAt,
       isRevoked: false,
-      family: tokenFamily,
-      device: deviceInfo?.device,
-      deviceId: deviceInfo?.deviceId,
-      userAgent: deviceInfo?.userAgent,
-      ipAddress: deviceInfo?.ipAddress,
+      family,
+      token,
+      replacedByToken: previousToken ,
+      ...deviceInfo,
     },
   });
-
-  // If this is a new login (not a refresh), enforce token limits
-  if (!previousToken) {
-    await enforceTokenLimit(user.walletAddress);
-  }
-
-  return refreshToken;
 };
+
 
 export const findRefreshToken = async (
   token: string
-): Promise<RefreshToken | null> => {
+): Promise<IRefreshToken | null> => {
   return await prisma.refreshToken.findFirst({
     where: {
       token,
@@ -191,7 +152,7 @@ export const revokeDeviceRefreshTokens = async (
  */
 export const getUserActiveDevices = async (
   userId: string
-): Promise<DeviceInfo[]> => {
+): Promise<IDeviceInfo[]> => {
   const activeTokens = await prisma.refreshToken.findMany({
     where: {
       userId,
@@ -209,7 +170,7 @@ export const getUserActiveDevices = async (
     },
   });
 
-  return activeTokens as DeviceInfo[];
+  return activeTokens as IDeviceInfo[];
 };
 
 /**

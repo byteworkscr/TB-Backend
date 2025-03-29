@@ -3,7 +3,7 @@ import LoanService from "../services/loanService";
 import paymentService from "../services/paymentService";
 import reputationService from "../services/reputationService";
 import recommendationService from "../services/recommendationService";
-
+import { IRecommendation } from "../interfaces";
 /**
  * Controller for handling user analytics-related requests, including loans, payments, reputation, and recommendations.
  */

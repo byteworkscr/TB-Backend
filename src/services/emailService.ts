@@ -1,35 +1,16 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { NotificationType } from "@prisma/client";
 import dotenv from "dotenv";
+import { type IEmailTemplate } from '../interfaces';
+import { type IEmailConfig } from '../interfaces';
 
 dotenv.config();
 
-interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth: {
-    type: string;
-    user: string;
-    // OAuth2 properties
-    clientId?: string;
-    clientSecret?: string;
-    refreshToken?: string;
-    accessToken?: string;
-    expires?: number;
-    // Password fallback (only used if OAuth2 is not configured)
-    pass?: string;
-  };
-}
 
-interface EmailTemplate {
-  subject: string;
-  template: (userName: string, message: string) => string;
-}
 
 export class EmailNotificationService {
   private transporter: Transporter;
-  private emailTemplates: Record<NotificationType, EmailTemplate>;
+  private emailTemplates: Record<NotificationType, IEmailTemplate>;
   private fromEmail: string;
 
   constructor() {

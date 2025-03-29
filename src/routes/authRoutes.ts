@@ -6,7 +6,6 @@ import {
   findUserByWalletAddress,
   createUser,
   updateUserNonce,
-  User,
 } from "../models/user";
 import {
   ALLOWED_REFRESH_ORIGINS,
@@ -26,7 +25,6 @@ import {
   getTokenFamily,
   revokeDeviceRefreshTokens,
   getUserActiveDevices,
-  DeviceInfo,
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
 import errorHandler from '../middleware/errorHandler';
@@ -34,15 +32,16 @@ import { sendVerificationEmail}  from '../../src/controllers/authController';
 import { verifyEmail } from '../../src/controllers/authController';
 import { register } from '../../src/controllers/authController';
 import { validateVerifyEmail, checkValidationResult, validateRegister } from '../../src/middleware/validation';
+import { IDeviceInfo, IAuthUser } from '../interfaces';
 
 const router: Router = express.Router();
 
-const getDeviceInfo = (req: Request): DeviceInfo => {
+const getDeviceInfo = (req: Request): IDeviceInfo => {
   return {
     device: detectDeviceType(req.headers["user-agent"] || ""),
     deviceId: req.body.deviceId || uuidv4(),
-    userAgent: req.headers["user-agent"] || null,
-    ipAddress: getClientIp(req),
+    userAgent: req.headers["user-agent"] || "",
+    ipAddress: req.ip,
   };
 };
 
@@ -98,17 +97,17 @@ router.post("/login", authenticateUser, async (req: Request, res: Response, next
       walletAddress: user.walletAddress,
       nonce: '',
       createdAt: new Date
-    });
+    } as IAuthUser);
     const refreshToken = generateRefreshToken({
       walletAddress: user.walletAddress,
       nonce: '',
       createdAt: new Date
-    }, origin);
+    } as IAuthUser, origin);
     await createRefreshToken({
       walletAddress: user.walletAddress,
       nonce: '',
       createdAt: new Date
-    }, refreshToken, deviceInfo);
+    } as IAuthUser, refreshToken, deviceInfo);
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_CONFIG);
     res.json({
       message: "Successfully authenticated",
@@ -154,16 +153,16 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
       return;
     }
     const tokenFamily = await getTokenFamily(refresh_token);
-    const deviceInfo: DeviceInfo = {
+    const deviceInfo: IDeviceInfo = {
       device: storedToken.device,
       deviceId: storedToken.deviceId,
       userAgent: req.headers["user-agent"] || storedToken.userAgent,
       ipAddress: getClientIp(req),
     };
     const user = { walletAddress: payload.walletAddress };
-    const accessToken = generateAccessToken(user as User);
-    const newRefreshToken = generateRefreshToken(user as User, currentOrigin);
-    await createRefreshToken(user as User, newRefreshToken, deviceInfo, tokenFamily || undefined, refresh_token);
+    const accessToken = generateAccessToken(user as IAuthUser);
+    const newRefreshToken = generateRefreshToken(user as IAuthUser, currentOrigin);
+    await createRefreshToken(user as IAuthUser, newRefreshToken, deviceInfo, tokenFamily || undefined, refresh_token);
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, COOKIE_CONFIG);
     res.json({ accessToken });
   } catch (error) {

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { GraphQLError } from 'graphql';
 import { generateToken } from "../middleware/auth.middleware";
 import crypto from 'crypto';
-import {Context, CreateUserInput, UpdateUserInput} from "../../models/user";
+import {Context, CreateUserInput, UpdateUserInput} from "../../interfaces";
 import {Validator} from "../../utils/input-validation-util";
 
 const prisma = new PrismaClient();

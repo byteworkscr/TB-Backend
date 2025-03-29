@@ -1,5 +1,8 @@
 import jwt from "jsonwebtoken";
 import { User } from "../models/user";
+import { type IJWTPayload } from "../interfaces";
+import { IAuthUser } from "../interfaces";
+
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret";
 const REFRESH_TOKEN_SECRET =
@@ -28,15 +31,16 @@ export interface JWTPayload {
   origin?: string; // Origin used when generating the token
 }
 
-export const generateAccessToken = (user: User): string => {
+export const generateAccessToken = (user: IAuthUser): string => {
   return jwt.sign(
-    { walletAddress: user.walletAddress, type: "access" } as JWTPayload,
+    { walletAddress: user.walletAddress, type: "access" } as IJWTPayload,
     JWT_SECRET,
     { expiresIn: "1h" }
   );
 };
 
-export const generateRefreshToken = (user: User, origin?: string): string => {
+
+export const generateRefreshToken = (user: IAuthUser, origin?: string): string => {
   return jwt.sign(
     {
       walletAddress: user.walletAddress,
@@ -48,10 +52,10 @@ export const generateRefreshToken = (user: User, origin?: string): string => {
   );
 };
 
-export const verifyAccessToken = (token: string): JWTPayload => {
+export const verifyAccessToken = (token: string): IJWTPayload => {
   return jwt.verify(token, JWT_SECRET) as JWTPayload;
 };
 
-export const verifyRefreshToken = (token: string): JWTPayload => {
+export const verifyRefreshToken = (token: string): IJWTPayload => {
   return jwt.verify(token, REFRESH_TOKEN_SECRET) as JWTPayload;
 };

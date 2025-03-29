@@ -7,15 +7,8 @@ import prisma from '../config/prisma';
 import { verifyAccessToken, REFRESH_TOKEN_COOKIE_NAME } from "../utils/jwt";
 import { isTokenRevoked } from '../services/tokenService';
 import { findRefreshToken } from '../models/refreshToken';
+import { IAuthInfo, IAuthUser } from '../interfaces';
 
-interface AuthInfo {
-  message?: string;
-  status?: number;
-}
-
-interface AuthUser {
-  walletAddress: string;
-}
 
 export const isAuthenticated = async (
   req: Request,
@@ -132,26 +125,17 @@ export const authenticateUser = (
 ): void => {
   passport.authenticate(
     "wallet",
-    (err: Error | null, user: AuthUser | false, info: AuthInfo) => {
+    (err: Error | null, user: IAuthUser | false, info: IAuthInfo) => {
       if (err) {
         next(err);
         return;
       }
       if (!user) {
-        const status =
-          info?.status || (info?.message?.includes("not found") ? 400 : 401);
-        res
-          .status(status)
-          .json({ error: info?.message || "Authentication failed" });
+        res.status(info?.status || 401).json(info);
         return;
       }
-      req.logIn(user, (err) => {
-        if (err) {
-          next(err);
-          return;
-        }
-        next();
-      });
+      req.user = user;
+      next();
     }
   )(req, res, next);
 };

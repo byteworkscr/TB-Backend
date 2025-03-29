@@ -1,41 +1,8 @@
-export interface User {
-  walletAddress: string;
-  nonce: string; // Used for signature verification
-  createdAt: Date;
-  lastLogin?: Date;
-}
+import { type IUser } from "../interfaces";
 
-
-export interface Context {
-  user?: {
-    id: string;
-    email: string;
-  }
-}
-
-export interface CreateUserInput {
-  name: string;
-  email: string;
-  password: string;
-  walletAddress: string;
-  roleIds: string[];
-}
-
-export interface UpdateUserInput {
-  name?: string;
-  email?: string;
-  walletAddress?: string;
-}
-
-
-
-
-export interface UserSession {
-  walletAddress: string;
-}
 
 // In-memory store for users (replace with database in production)
-export const users: User[] = [];
+export const users: IUser[] = [];
 
 // Keep track of last used nonce timestamp to ensure uniqueness
 let lastNonceTimestamp = 0;
@@ -50,26 +17,28 @@ export async function generateNonce(): Promise<string> {
   return `${timestamp}-${microseconds}-${random}`;
 }
 
-export const findUserByWalletAddress = (walletAddress: string): User | undefined => {
-  return users.find(user => user.walletAddress === walletAddress);
+export const findUserByWalletAddress = (
+  walletAddress: string
+): IUser | undefined => {
+  return users.find((user) => user.walletAddress === walletAddress);
 };
 
-export const createUser = async (walletAddress: string): Promise<User> => {
-  const user: User = {
+export const createUser = async (walletAddress: string): Promise<IUser> => {
+  const user: IUser = {
     walletAddress,
     nonce: await generateNonce(),
-    createdAt: new Date()
-  };
+    createdAt: new Date(),
+   } as IUser;
   users.push(user);
   return user;
 };
 
-export const updateUserNonce = async (user: User): Promise<string> => {
+export const updateUserNonce = async (user: IUser): Promise<string> => {
   const newNonce = await generateNonce();
   user.nonce = newNonce;
   return newNonce;
 };
 
-export const updateLastLogin = (user: User): void => {
+export const updateLastLogin = (user: IUser): void => {
   user.lastLogin = new Date();
 };

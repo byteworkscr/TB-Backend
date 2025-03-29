@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql";
-import { CreateUserInput } from "../models/user";
+import { CreateUserInput } from "../interfaces";
 
 export class Validator {
     static validateEmail(email: string): boolean {
